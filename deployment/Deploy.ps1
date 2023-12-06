@@ -11,24 +11,24 @@
 # -PublisherAdminUsers "<your@email.address>"
 
 Param(  
-   [string][Parameter(Mandatory)]$WebAppNamePrefix, # Prefix used for creating web applications
-   [string][Parameter()]$ResourceGroupForDeployment, # Name of the resource group to deploy the resources
-   [string][Parameter(Mandatory)]$Location, # Location of the resource group
-   [string][Parameter(Mandatory)]$PublisherAdminUsers, # Provide a list of email addresses (as comma-separated-values) that should be granted access to the Publisher Portal
-   [string][Parameter()]$TenantID, # The value should match the value provided for Active Directory TenantID in the Technical Configuration of the Transactable Offer in Partner Center
-   [string][Parameter()]$AzureSubscriptionID, # Subscription where the resources be deployed
-   [string][Parameter()]$ADApplicationID, # The value should match the value provided for Active Directory Application ID in the Technical Configuration of the Transactable Offer in Partner Center
-   [string][Parameter()]$ADApplicationSecret, # Secret key of the AD Application
-   [string][Parameter()]$ADMTApplicationID, # Multi-Tenant Active Directory Application ID
-   [string][Parameter()]$SQLDatabaseName, # Name of the database (Defaults to AMPSaaSDB)
-   [string][Parameter()]$SQLServerName, # Name of the database server (without database.windows.net)
-   [string][Parameter()]$SQLAdminLogin, # SQL Admin login
-   [string][Parameter()][ValidatePattern('^[^\s$@]{1,128}$')]$SQLAdminLoginPassword, # SQL Admin password  
-   [string][Parameter()]$LogoURLpng,  # URL for Publisher .png logo
-   [string][Parameter()]$LogoURLico,  # URL for Publisher .ico logo
-   [string][Parameter()]$KeyVault, # Name of KeyVault
-   [switch][Parameter()]$MeteredSchedulerSupport, # Add this key like -MeteredSchedulerSupport to the command to enable Metered Scheduler Support
-   [switch][Parameter()]$Quiet #if set, only show error / warning output from script commands
+	[string][Parameter(Mandatory)]$WebAppNamePrefix, # Prefix used for creating web applications
+	[string][Parameter()]$ResourceGroupForDeployment, # Name of the resource group to deploy the resources
+	[string][Parameter(Mandatory)]$Location, # Location of the resource group
+	[string][Parameter(Mandatory)]$PublisherAdminUsers, # Provide a list of email addresses (as comma-separated-values) that should be granted access to the Publisher Portal
+	[string][Parameter()]$TenantID, # The value should match the value provided for Active Directory TenantID in the Technical Configuration of the Transactable Offer in Partner Center
+	[string][Parameter()]$AzureSubscriptionID, # Subscription where the resources be deployed
+	[string][Parameter()]$ADApplicationID, # The value should match the value provided for Active Directory Application ID in the Technical Configuration of the Transactable Offer in Partner Center
+	[string][Parameter()]$ADApplicationSecret, # Secret key of the AD Application
+	[string][Parameter()]$ADMTApplicationID, # Multi-Tenant Active Directory Application ID
+	[string][Parameter()]$SQLDatabaseName, # Name of the database (Defaults to AMPSaaSDB)
+	[string][Parameter()]$SQLServerName, # Name of the database server (without database.windows.net)
+	[string][Parameter()]$SQLAdminLogin, # SQL Admin login
+	[string][Parameter()][ValidatePattern('^[^\s$@]{1,128}$')]$SQLAdminLoginPassword, # SQL Admin password  
+	[string][Parameter()]$LogoURLpng, # URL for Publisher .png logo
+	[string][Parameter()]$LogoURLico, # URL for Publisher .ico logo
+	[string][Parameter()]$KeyVault, # Name of KeyVault
+	[switch][Parameter()]$MeteredSchedulerSupport, # Add this key like -MeteredSchedulerSupport to the command to enable Metered Scheduler Support
+	[switch][Parameter()]$Quiet #if set, only show error / warning output from script commands
 )
 
 # Make sure to install Az Module before running this script
@@ -40,50 +40,49 @@ $startTime = Get-Date
 #region Set up Variables and Default Parameters
 
 if ($ResourceGroupForDeployment -eq "") {
-    $ResourceGroupForDeployment = $WebAppNamePrefix 
+	$ResourceGroupForDeployment = $WebAppNamePrefix 
 }
 if ($SQLServerName -eq "") {
-    $SQLServerName = $WebAppNamePrefix + "-sql"
+	$SQLServerName = $WebAppNamePrefix + "-sql"
 }
 if ($SQLAdminLogin -eq "") {
-    $SQLAdminLogin = "saasdbadmin" + $(Get-Random -Minimum 1 -Maximum 1000)
+	$SQLAdminLogin = "saasdbadmin" + $(Get-Random -Minimum 1 -Maximum 1000)
 }
 if ($SQLAdminLoginPassword -eq "") {
-    $SQLAdminLoginPassword = ([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((New-Guid))))+"="
+	$SQLAdminLoginPassword = ([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes((New-Guid)))) + "="
 }
 if ($SQLDatabaseName -eq "") {
-    $SQLDatabaseName = "AMPSaaSDB"
+	$SQLDatabaseName = "AMPSaaSDB"
 }
 
-if($KeyVault -eq "")
-{
-   $KeyVault=$WebAppNamePrefix+"-kv"
+if ($KeyVault -eq "") {
+	$KeyVault = $WebAppNamePrefix + "-kv"
 }
 
-$SaaSApiConfiguration_CodeHash= git log --format='%H' -1
-$azCliOutput = if($Quiet){'none'} else {'json'}
+$SaaSApiConfiguration_CodeHash = git log --format='%H' -1
+$azCliOutput = if ($Quiet) { 'none' } else { 'json' }
 
 #endregion
 
 #region Validate Parameters
 
-if($SQLAdminLogin.ToLower() -eq "admin") {
-    Throw "🛑 SQLAdminLogin may not be 'admin'."
-    exit 1
+if ($SQLAdminLogin.ToLower() -eq "admin") {
+	Throw "🛑 SQLAdminLogin may not be 'admin'."
+	exit 1
 }
-if($SQLAdminLoginPassword.Length -lt 8) {
-    Throw "🛑 SQLAdminLoginPassword must be at least 8 characters."
-    exit 1
+if ($SQLAdminLoginPassword.Length -lt 8) {
+	Throw "🛑 SQLAdminLoginPassword must be at least 8 characters."
+	exit 1
 }
-if($WebAppNamePrefix.Length -gt 21) {
-    Throw "🛑 Web name prefix must be less than 21 characters."
-    exit 1
+if ($WebAppNamePrefix.Length -gt 21) {
+	Throw "🛑 Web name prefix must be less than 21 characters."
+	exit 1
 }
 
 
-if(!($KeyVault -match "^[a-zA-Z][a-z0-9-]+$")) {
-    Throw "🛑 KeyVault name only allows alphanumeric and hyphens, but cannot start with a number or special character."
-    exit 1
+if (!($KeyVault -match "^[a-zA-Z][a-z0-9-]+$")) {
+	Throw "🛑 KeyVault name only allows alphanumeric and hyphens, but cannot start with a number or special character."
+	exit 1
 }
 
 #endregion 
@@ -94,9 +93,9 @@ if(!($KeyVault -match "^[a-zA-Z][a-z0-9-]+$")) {
 
 $dotnetversion = dotnet --version
 
-if(!$dotnetversion.StartsWith('6.')) {
-    Throw "🛑 Dotnet 6 not installed. Install dotnet6 and re-run the script."
-    Exit
+if (!$dotnetversion.StartsWith('7.')) {
+	Throw "🛑 Dotnet 6 not installed. Install dotnet6 and re-run the script."
+	Exit
 }
 
 #endregion
@@ -111,21 +110,21 @@ $currentTenant = $currentContext.tenantId
 $currentSubscription = $currentContext.id
 
 #Get TenantID if not set as argument
-if(!($TenantID)) {    
-    Get-AzTenant | Format-Table
-    if (!($TenantID = Read-Host "⌨  Type your TenantID or press Enter to accept your current one [$currentTenant]")) { $TenantID = $currentTenant }    
+if (!($TenantID)) {    
+	Get-AzTenant | Format-Table
+	if (!($TenantID = Read-Host "⌨  Type your TenantID or press Enter to accept your current one [$currentTenant]")) { $TenantID = $currentTenant }    
 }
 else {
-    Write-Host "🔑 Tenant provided: $TenantID"
+	Write-Host "🔑 Tenant provided: $TenantID"
 }
 
 #Get Azure Subscription if not set as argument
-if(!($AzureSubscriptionID)) {    
-    Get-AzSubscription -TenantId $TenantID | Format-Table
-    if (!($AzureSubscriptionID = Read-Host "⌨  Type your SubscriptionID or press Enter to accept your current one [$currentSubscription]")) { $AzureSubscriptionID = $currentSubscription }
+if (!($AzureSubscriptionID)) {    
+	Get-AzSubscription -TenantId $TenantID | Format-Table
+	if (!($AzureSubscriptionID = Read-Host "⌨  Type your SubscriptionID or press Enter to accept your current one [$currentSubscription]")) { $AzureSubscriptionID = $currentSubscription }
 }
 else {
-    Write-Host "🔑 Azure Subscription provided: $AzureSubscriptionID"
+	Write-Host "🔑 Azure Subscription provided: $AzureSubscriptionID"
 }
 
 #Set the AZ Cli context
@@ -138,13 +137,12 @@ Write-Host "🔑 Azure Subscription '$AzureSubscriptionID' selected."
 
 #region Check If KeyVault Exists
 
-$KeyVaultApiUri="https://management.azure.com/subscriptions/$AzureSubscriptionID/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2019-09-01"
-$KeyVaultApiBody='{"name": "'+$KeyVault+'","type": "Microsoft.KeyVault/vaults"}'
+$KeyVaultApiUri = "https://management.azure.com/subscriptions/$AzureSubscriptionID/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2019-09-01"
+$KeyVaultApiBody = '{"name": "' + $KeyVault + '","type": "Microsoft.KeyVault/vaults"}'
 
-$kv_check=az rest --method post --uri $KeyVaultApiUri --headers 'Content-Type=application/json' --body $KeyVaultApiBody | ConvertFrom-Json
+$kv_check = az rest --method post --uri $KeyVaultApiUri --headers 'Content-Type=application/json' --body $KeyVaultApiBody | ConvertFrom-Json
 
-if( $kv_check.reason -eq "AlreadyExists")
-{
+if ( $kv_check.reason -eq "AlreadyExists") {
 	Write-Host ""
 	Write-Host "🛑 KeyVault name "  -NoNewline -ForegroundColor Red
 	Write-Host "$KeyVault"  -NoNewline -ForegroundColor Red -BackgroundColor Yellow
@@ -153,7 +151,7 @@ if( $kv_check.reason -eq "AlreadyExists")
 	Write-Host "https://learn.microsoft.com/en-us/cli/azure/keyvault?view=azure-cli-latest#az-keyvault-purge."
 	Write-Host "You could use new KeyVault name by using parameter" -NoNewline 
 	Write-Host " -KeyVault"  -ForegroundColor Green
-    exit 1
+	exit 1
 }
 
 
@@ -161,36 +159,35 @@ if( $kv_check.reason -eq "AlreadyExists")
 
 #region Check If SQL Server Exist
 $sql_exists = Get-AzureRmSqlServer -ServerName $SQLServerName -ResourceGroupName $ResourceGroupForDeployment -ErrorAction SilentlyContinue
-if ($sql_exists) 
-{
+if ($sql_exists) {
 	Write-Host ""
 	Write-Host "🛑 SQl Server name " -NoNewline -ForegroundColor Red
 	Write-Host "$SQLServerName"   -NoNewline -ForegroundColor Red -BackgroundColor Yellow
 	Write-Host " already exists." -ForegroundColor Red
 	Write-Host "Please delete existing instance or use new sql Instance name by using parameter" -NoNewline 
 	Write-Host " -SQLServerName"   -ForegroundColor Green
-    exit 1
+	exit 1
 }  
 #endregion
 
 #region Dowloading assets if provided
 
 # Download Publisher's PNG logo
-if($LogoURLpng) { 
-    Write-Host "📷 Logo image provided"
+if ($LogoURLpng) { 
+	Write-Host "📷 Logo image provided"
 	Write-Host "   🔵 Downloading Logo image file"
-    Invoke-WebRequest -Uri $LogoURLpng -OutFile "../src/CustomerSite/wwwroot/contoso-sales.png"
-    Invoke-WebRequest -Uri $LogoURLpng -OutFile "../src/AdminSite/wwwroot/contoso-sales.png"
-    Write-Host "   🔵 Logo image downloaded"
+	Invoke-WebRequest -Uri $LogoURLpng -OutFile "../src/CustomerSite/wwwroot/contoso-sales.png"
+	Invoke-WebRequest -Uri $LogoURLpng -OutFile "../src/AdminSite/wwwroot/contoso-sales.png"
+	Write-Host "   🔵 Logo image downloaded"
 }
 
 # Download Publisher's FAVICON logo
-if($LogoURLico) { 
-    Write-Host "📷 Logo icon provided"
+if ($LogoURLico) { 
+	Write-Host "📷 Logo icon provided"
 	Write-Host "   🔵 Downloading Logo icon file"
-    Invoke-WebRequest -Uri $LogoURLico -OutFile "../src/CustomerSite/wwwroot/favicon.ico"
-    Invoke-WebRequest -Uri $LogoURLico -OutFile "../src/AdminSite/wwwroot/favicon.ico"
-    Write-Host "   🔵 Logo icon downloaded"
+	Invoke-WebRequest -Uri $LogoURLico -OutFile "../src/CustomerSite/wwwroot/favicon.ico"
+	Invoke-WebRequest -Uri $LogoURLico -OutFile "../src/AdminSite/wwwroot/favicon.ico"
+	Write-Host "   🔵 Logo icon downloaded"
 }
 
 #endregion
@@ -202,28 +199,28 @@ $ISADMTApplicationIDProvided = $ADMTApplicationID
 
 #Create App Registration for authenticating calls to the Marketplace API
 if (!($ADApplicationID)) {   
-    Write-Host "🔑 Creating Fulfilment API App Registration"
-    try {   
-        $ADApplication = az ad app create --only-show-errors --display-name "$WebAppNamePrefix-FulfillmentAppReg" | ConvertFrom-Json
+	Write-Host "🔑 Creating Fulfilment API App Registration"
+	try {   
+		$ADApplication = az ad app create --only-show-errors --display-name "$WebAppNamePrefix-FulfillmentAppReg" | ConvertFrom-Json
 		$ADObjectID = $ADApplication.id
-        $ADApplicationID = $ADApplication.appId
-        sleep 5 #this is to give time to AAD to register
-        $ADApplicationSecret = az ad app credential reset --id $ADObjectID --append --display-name 'SaaSAPI' --years 2 --query password --only-show-errors --output tsv
+		$ADApplicationID = $ADApplication.appId
+		sleep 5 #this is to give time to AAD to register
+		$ADApplicationSecret = az ad app credential reset --id $ADObjectID --append --display-name 'SaaSAPI' --years 2 --query password --only-show-errors --output tsv
 				
-        Write-Host "   🔵 FulfilmentAPI App Registration created."
+		Write-Host "   🔵 FulfilmentAPI App Registration created."
 		Write-Host "      ➡️ Application ID:" $ADApplicationID  
-        Write-Host "      ➡️ App Secret:" $ADApplicationSecret
-    }
-    catch [System.Net.WebException],[System.IO.IOException] {
-        Write-Host "🚨🚨   $PSItem.Exception"
-        break;
-    }
+		Write-Host "      ➡️ App Secret:" $ADApplicationSecret
+	}
+	catch [System.Net.WebException], [System.IO.IOException] {
+		Write-Host "🚨🚨   $PSItem.Exception"
+		break;
+	}
 }
 
 #Create Multi-Tenant App Registration for Landing Page User Login
 if (!($ADMTApplicationID)) {  
-    Write-Host "🔑 Creating Landing Page SSO App Registration"
-    try {
+	Write-Host "🔑 Creating Landing Page SSO App Registration"
+	try {
 	
 		$appCreateRequestBodyJson = @"
 {
@@ -264,7 +261,7 @@ if (!($ADMTApplicationID)) {
 		if ($PsVersionTable.Platform -ne 'Unix') {
 			#On Windows, we need to escape quotes and remove new lines before sending the payload to az rest. 
 			# See: https://github.com/Azure/azure-cli/blob/dev/doc/quoting-issues-with-powershell.md#double-quotes--are-lost
-			$appCreateRequestBodyJson = $appCreateRequestBodyJson.replace('"','\"').replace("`r`n","")
+			$appCreateRequestBodyJson = $appCreateRequestBodyJson.replace('"', '\"').replace("`r`n", "")
 		}
 
 		$landingpageLoginAppReg = $(az rest --method POST --headers "Content-Type=application/json" --uri https://graph.microsoft.com/v1.0/applications --body $appCreateRequestBodyJson  ) | ConvertFrom-Json
@@ -272,32 +269,32 @@ if (!($ADMTApplicationID)) {
 		$ADMTApplicationID = $landingpageLoginAppReg.appId
 		$ADMTObjectID = $landingpageLoginAppReg.id
 	
-        Write-Host "   🔵 Landing Page SSO App Registration created."
+		Write-Host "   🔵 Landing Page SSO App Registration created."
 		Write-Host "      ➡️ Application Id: $ADMTApplicationID"
 	
 		# Download Publisher's AppRegistration logo
-        if($LogoURLpng) { 
+		if ($LogoURLpng) { 
 			Write-Host "   🔵 Logo image provided. Setting the Application branding logo"
 			Write-Host "      ➡️ Setting the Application branding logo"
-			$token=(az account get-access-token --resource "https://graph.microsoft.com" --query accessToken --output tsv)
+			$token = (az account get-access-token --resource "https://graph.microsoft.com" --query accessToken --output tsv)
 			$logoWeb = Invoke-WebRequest $LogoURLpng
 			$logoContentType = $logoWeb.Headers["Content-Type"]
 			$logoContent = $logoWeb.Content
 			
 			$uploaded = Invoke-WebRequest `
-			  -Uri "https://graph.microsoft.com/v1.0/applications/$ADMTObjectID/logo" `
-			  -Method "PUT" `
-			  -Header @{"Authorization"="Bearer $token";"Content-Type"="$logoContentType";} `
-			  -Body $logoContent
+				-Uri "https://graph.microsoft.com/v1.0/applications/$ADMTObjectID/logo" `
+				-Method "PUT" `
+				-Header @{"Authorization" = "Bearer $token"; "Content-Type" = "$logoContentType"; } `
+				-Body $logoContent
 		    
 			Write-Host "      ➡️ Application branding logo set."
-        }
+		}
 
-    }
-    catch [System.Net.WebException],[System.IO.IOException] {
-        Write-Host "🚨🚨   $PSItem.Exception"
-        break;
-    }
+	}
+	catch [System.Net.WebException], [System.IO.IOException] {
+		Write-Host "🚨🚨   $PSItem.Exception"
+		break;
+	}
 }
 
 #endregion
@@ -324,15 +321,15 @@ if (!(Test-Path '../Publish')) {
 Write-host "☁ Deploy Azure Resources"
 
 #Set-up resource name variables
-$WebAppNameService=$WebAppNamePrefix+"-asp"
-$WebAppNameAdmin=$WebAppNamePrefix+"-admin"
-$WebAppNamePortal=$WebAppNamePrefix+"-portal"
+$WebAppNameService = $WebAppNamePrefix + "-asp"
+$WebAppNameAdmin = $WebAppNamePrefix + "-admin"
+$WebAppNamePortal = $WebAppNamePrefix + "-portal"
 
 #keep the space at the end of the string - bug in az cli running on windows powershell truncates last char https://github.com/Azure/azure-cli/issues/10066
-$ADApplicationSecretKeyVault="@Microsoft.KeyVault(VaultName=$KeyVault;SecretName=ADApplicationSecret) "
-$DefaultConnectionKeyVault="@Microsoft.KeyVault(VaultName=$KeyVault;SecretName=DefaultConnection) "
-$ServerUri = $SQLServerName+".database.windows.net"
-$Connection="Data Source=tcp:"+$ServerUri+",1433;Initial Catalog="+$SQLDatabaseName+";User Id="+$SQLAdminLogin+"@"+$SQLServerName+".database.windows.net;Password="+$SQLAdminLoginPassword+";"
+$ADApplicationSecretKeyVault = "@Microsoft.KeyVault(VaultName=$KeyVault;SecretName=ADApplicationSecret) "
+$DefaultConnectionKeyVault = "@Microsoft.KeyVault(VaultName=$KeyVault;SecretName=DefaultConnection) "
+$ServerUri = $SQLServerName + ".database.windows.net"
+$Connection = "Data Source=tcp:" + $ServerUri + ",1433;Initial Catalog=" + $SQLDatabaseName + ";User Id=" + $SQLAdminLogin + "@" + $SQLServerName + ".database.windows.net;Password=" + $SQLAdminLoginPassword + ";"
 
 
 Write-host "   🔵 Resource Group"
@@ -344,10 +341,10 @@ Write-host "      ➡️ Create Sql Server"
 az sql server create --name $SQLServerName --resource-group $ResourceGroupForDeployment --location $Location --admin-user $SQLAdminLogin --admin-password $SQLAdminLoginPassword --output $azCliOutput
 Write-host "      ➡️ Add SQL Server Firewall rules"
 az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowAzureIP --start-ip-address "0.0.0.0" --end-ip-address "0.0.0.0" --output $azCliOutput
-if ($env:ACC_CLOUD -eq $null){
-    Write-host "      ➡️ Running in local environment - Add current IP to firewall"
+if ($env:ACC_CLOUD -eq $null) {
+	Write-host "      ➡️ Running in local environment - Add current IP to firewall"
 	$publicIp = (Invoke-WebRequest -uri "http://ifconfig.me/ip").Content
-    az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowIP --start-ip-address "$publicIp" --end-ip-address "$publicIp" --output $azCliOutput
+	az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowIP --start-ip-address "$publicIp" --end-ip-address "$publicIp" --output $azCliOutput
 }
 Write-host "      ➡️ Create SQL DB"
 az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServerName --name $SQLDatabaseName  --edition Standard  --capacity 10 --zone-redundant false --output $azCliOutput
@@ -379,7 +376,7 @@ Write-host "   🔵 Customer Portal WebApp"
 Write-host "      ➡️ Create Web App"
 az webapp create -g $ResourceGroupForDeployment -p $WebAppNameService -n $WebAppNamePortal --runtime dotnet:6 --output $azCliOutput
 Write-host "      ➡️ Assign Identity"
-$WebAppNamePortalId= az webapp identity assign -g $ResourceGroupForDeployment  -n $WebAppNamePortal --identities [system] --query principalId -o tsv 
+$WebAppNamePortalId = az webapp identity assign -g $ResourceGroupForDeployment  -n $WebAppNamePortal --identities [system] --query principalId -o tsv 
 Write-host "      ➡️ Setup access to KeyVault"
 az keyvault set-policy --name $KeyVault  --object-id $WebAppNamePortalId --secret-permissions get list --key-permissions get list --resource-group $ResourceGroupForDeployment --output $azCliOutput
 Write-host "      ➡️ Set Configuration"
@@ -415,7 +412,8 @@ Remove-Item -Path script.sql
 #region Present Output
 
 Write-host "✅ If the intallation completed without error complete the folllowing checklist:"
-if ($ISADMTApplicationIDProvided) {  #If provided then show the user where to add the landing page in AAD, otherwise script did this already for the user.
+if ($ISADMTApplicationIDProvided) {
+	#If provided then show the user where to add the landing page in AAD, otherwise script did this already for the user.
 	Write-host "   🔵 Add The following URLs to the multi-tenant AAD App Registration in Azure Portal:"
 	Write-host "      ➡️ https://$WebAppNamePrefix-portal.azurewebsites.net"
 	Write-host "      ➡️ https://$WebAppNamePrefix-portal.azurewebsites.net/"
