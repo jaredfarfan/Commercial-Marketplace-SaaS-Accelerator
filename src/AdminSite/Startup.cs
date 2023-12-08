@@ -102,7 +102,7 @@ public class Startup
                 options.CallbackPath = "/Home/Index";
                 options.SignedOutRedirectUri = config.SignedOutRedirectUri;
                 options.TokenValidationParameters.NameClaimType = "name";
-                options.TokenValidationParameters.ValidateIssuer = false;
+                options.TokenValidationParameters.ValidateIssuer = false; 
             })
             .AddCookie();
 
